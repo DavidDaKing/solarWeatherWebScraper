@@ -15,6 +15,8 @@
     ** Modification History **
     Initial Implementation - DAB 01/17/2026
 
+    Scan the results, created if logic for solar flare cases. - DAB 01/20/2026
+
 -------------------------------------------------------------------
 
     Astronomy Questions:
@@ -47,6 +49,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
+## Import email requirements here 
+
 import requests 
 
 # DATA SOURCE --> I GET MEASUREMENTS FROM THIS JSON 
@@ -61,6 +65,28 @@ FLARE_OFFSETS = [
     ("M", 1e-5),
     ("X", 1e-4)
 ]
+
+#print(f"This is the strongest: {type(FLARE_OFFSETS[4][1])}")
+STRONG_FLARE = FLARE_OFFSETS[4][1]
+
+# boolean comparison if flare is x
+def is_x_flare(flux: float) -> bool:
+    return flux >= STRONG_FLARE
+# ALERT THE SCIENTIST
+def x_flare_Alert(entries: list[xrayEntry]) -> None:
+    if not entries:
+        return
+    
+    # Find strongest flare
+    strongest = max(entries, key=lambda e: e.flux)
+    # No action if weaker 
+    if not is_x_flare(strongest.flux):
+        return
+
+    if is_x_flare(strongest.flux):
+
+        ## Insert email logic here 
+        print("STRONG ASS FLARE DETECTED")
 
 # HELPER FUNCTION TO DEFINE FLARE CLASS 
 def flare_class(flux: float) -> str:
@@ -232,4 +258,6 @@ if __name__ == "__main__":
     save_file(data2h, "solarWeather2h.csv")
     write_file(payload, "solarWeather2h.json")
     print("Wrote: csv file, json file")
+
+
 
