@@ -17,6 +17,8 @@
 
     Scan the results, created if logic for solar flare cases. - DAB 01/20/2026
 
+    Created Email Functionality through some mail sending api - DAB 01/21/2026
+
 -------------------------------------------------------------------
 
     Astronomy Questions:
@@ -48,10 +50,12 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
+import requests
 
 ## Import email requirements here 
-
-import requests 
+import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 # DATA SOURCE --> I GET MEASUREMENTS FROM THIS JSON 
 SRC_URL = "https://services.swpc.noaa.gov/json/goes/primary/xrays-1-day.json"
@@ -67,6 +71,7 @@ FLARE_OFFSETS = [
 ]
 
 #print(f"This is the strongest: {type(FLARE_OFFSETS[4][1])}")
+# Location within the dictionary list
 STRONG_FLARE = FLARE_OFFSETS[4][1]
 
 # boolean comparison if flare is x
@@ -80,13 +85,15 @@ def x_flare_Alert(entries: list[xrayEntry]) -> None:
     # Find strongest flare
     strongest = max(entries, key=lambda e: e.flux)
     # No action if weaker 
+
+    # Debugging print statements
+    #print(f"This is the type of flare: {type(strongest)}")
+
     if not is_x_flare(strongest.flux):
         return
 
-    if is_x_flare(strongest.flux):
-
-        ## Insert email logic here 
-        print("STRONG ASS FLARE DETECTED")
+    print(f"[ALERT] X-CLASS FLARE DETECTED: {flare_class(strongest.flux)} at {strongest.time_utc.isoformat()}")
+    alert_astronomer()
 
 # HELPER FUNCTION TO DEFINE FLARE CLASS 
 def flare_class(flux: float) -> str:
@@ -98,6 +105,25 @@ def flare_class(flux: float) -> str:
             return f"{offset}{(flux/offset):.2f}"
         
     return f"A{(flux / 1e-8):.2f}"
+
+## EMAIL FUNCTIONS TO ALERT THE ASTRONOMER 
+    # IF SOLAR FLARES ARE AT ITS STRONGEST 
+def alert_astronomer():
+    message = Mail(
+        from_email='dabower42069@gmail.com',
+        to_emails='bower@stci.edu',
+        subject='SOLAR FLARES IN X CATEGORY',
+        html_content='<strong>Please check the current solar weather reports. We believe that the solar flares are strong today.</strong>')
+    try:
+        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        # sg.set_sendgrid_data_residency("eu")
+        # uncomment the above line if you are sending mail using a regional EU subuser
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+    except Exception as e:
+        print(e.message)
 
 
 # This is a data structure for one measurement 
@@ -258,6 +284,9 @@ if __name__ == "__main__":
     save_file(data2h, "solarWeather2h.csv")
     write_file(payload, "solarWeather2h.json")
     print("Wrote: csv file, json file")
+
+    # Adding alert logic here
+    x_flare_Alert(data2h)
 
 
 
